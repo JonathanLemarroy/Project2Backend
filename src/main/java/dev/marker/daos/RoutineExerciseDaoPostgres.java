@@ -13,21 +13,14 @@ public class RoutineExerciseDaoPostgres implements RoutineExerciseDao {
         this.tableName = tableName;
     }
 
-    public String getTableName() {
-        return tableName;
-    }
-
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
-    }
-
     @Override
     public RoutineExercise createExercise(RoutineExercise routineExercise) {
 
-        String sql = String.format("INSERT INTO %s (exercise_name, routine_id, duration, reps, weight) VALUES (?,?,?,?,?)", this.tableName);
-        try (Connection connection = ConnectionUtil.createConnection();
-             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
+        String sql = String.format(
+                "INSERT INTO %s (exercise_name, routine_id, duration, reps, weight) VALUES (?,?,?,?,?)",
+                this.tableName);
+        try (Connection connection = ConnectionUtil.createConnection()) {
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, routineExercise.getExerciseName());
             ps.setInt(2, routineExercise.getRoutineId());
             ps.setInt(3, routineExercise.getDuration());
@@ -46,12 +39,11 @@ public class RoutineExerciseDaoPostgres implements RoutineExerciseDao {
     @Override
     public RoutineExercise getExercise(int routineExerciseId) {
         String sql = String.format("SELECT * FROM %s WHERE routine_exercise_id = ?", this.tableName);
-        try(Connection connection = ConnectionUtil.createConnection();
-            PreparedStatement ps = connection.prepareStatement(sql)){
-
+        try (Connection connection = ConnectionUtil.createConnection()) {
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setInt(1, routineExerciseId);
             ResultSet rs = ps.executeQuery();
-            if(rs.next()){
+            if (rs.next()) {
                 RoutineExercise routineExercise = new RoutineExercise();
                 routineExercise.setRoutineExerciseId(rs.getInt("routine_exercise_id"));
                 routineExercise.setExerciseName(rs.getString("exercise_name"));
@@ -61,13 +53,11 @@ public class RoutineExerciseDaoPostgres implements RoutineExerciseDao {
                 routineExercise.setWeight(rs.getInt("weight"));
                 rs.close();
                 return routineExercise;
-            }
-            else{
+            } else {
                 rs.close();
                 return null;
             }
-        }
-        catch(SQLException e){
+        } catch (SQLException e) {
             return null;
         }
     }
@@ -76,9 +66,8 @@ public class RoutineExerciseDaoPostgres implements RoutineExerciseDao {
     public List<RoutineExercise> getAllExercisesInRoutine(int routineId) {
         List<RoutineExercise> routineExercises = new ArrayList<>();
         String sql = String.format("SELECT * FROM %s WHERE routine_id = ?", this.tableName);
-        try (Connection connection = ConnectionUtil.createConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-
+        try (Connection connection = ConnectionUtil.createConnection()) {
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setInt(1, routineId);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -103,9 +92,8 @@ public class RoutineExerciseDaoPostgres implements RoutineExerciseDao {
         String sql = String.format(
                 "UPDATE %s SET exercise_name = ?, routine_id = ?, duration = ?, reps = ?, weight = ? WHERE routine_exercise_id = ?",
                 this.tableName);
-        try (Connection connection = ConnectionUtil.createConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-
+        try (Connection connection = ConnectionUtil.createConnection()) {
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setString(1, routineExercise.getExerciseName());
             ps.setInt(2, routineExercise.getRoutineId());
             ps.setInt(3, routineExercise.getDuration());
@@ -126,9 +114,8 @@ public class RoutineExerciseDaoPostgres implements RoutineExerciseDao {
     @Override
     public boolean deleteExercise(int routineExerciseId) {
         String sql = String.format("DELETE FROM %s WHERE routine_exercise_id = ?", this.tableName);
-        try (Connection connection = ConnectionUtil.createConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-
+        try (Connection connection = ConnectionUtil.createConnection()) {
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setInt(1, routineExerciseId);
             int rowsChanged = ps.executeUpdate();
             if (rowsChanged == 0)

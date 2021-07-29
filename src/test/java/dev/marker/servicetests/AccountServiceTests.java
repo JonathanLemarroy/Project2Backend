@@ -1,8 +1,10 @@
 package dev.marker.servicetests;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
+import java.sql.SQLException;
+import java.util.Properties;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -28,23 +30,26 @@ public class AccountServiceTests {
 
     @BeforeClass
     void setup() {
-        ConnectionUtil.setHostname("revaturedb.cw0dgbcoagdz.us-east-2.rds.amazonaws.com");
-        ConnectionUtil.setUsername("revature");
-        ConnectionUtil.setPassword("revature");
-        Setup.setupTables(tableName, "test_exercises", "test_routines", "test_routine_exercises");
-        connection = ConnectionUtil.createConnection();
         try {
+            Properties connectionProperties = new Properties();
+            connectionProperties.load(AccountServiceTests.class.getResourceAsStream("/database.properties"));
+            ConnectionUtil.setConnectionProperties(connectionProperties);
+            Setup.runSQLScript(AccountServiceTests.class.getResourceAsStream("/test_database_setup.sql"));
+            connection = ConnectionUtil.createConnection();
             String sql = String.format("DELETE FROM %s", tableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.execute();
-        } catch (Exception e) {
-
+        } catch (IOException | SQLException e) {
+            e.printStackTrace();
         }
     }
 
     @AfterClass
     void closeConnection() {
         try {
+            String sql = String.format("DELETE FROM %s", tableName);
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.execute();
             connection.close();
         } catch (Exception e) {
             e.printStackTrace();

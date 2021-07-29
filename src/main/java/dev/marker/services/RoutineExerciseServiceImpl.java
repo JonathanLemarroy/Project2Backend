@@ -3,7 +3,6 @@ package dev.marker.services;
 import dev.marker.daos.RoutineExerciseDao;
 import dev.marker.daos.RoutineDao;
 import dev.marker.entities.RoutineExercise;
-import dev.marker.exceptions.IncorrectArguments;
 import dev.marker.exceptions.ResourceNotFound;
 import dev.marker.entities.User;
 import dev.marker.exceptions.PermissionException;
@@ -24,7 +23,7 @@ public class RoutineExerciseServiceImpl implements RoutineExerciseService{
         try{
             String curr = this.routineDao.getRoutine(routineExercise.getRoutineId()).getUsername();
             if(curr.equals(user.getUsername())){
-                RoutineExercise returnedExercise = this.routineExerciseDao.createExercise(routineExercise);
+                return this.routineExerciseDao.createExercise(routineExercise);
             }
             else{
                 throw new PermissionException("Cannot create exercise at this time");
@@ -33,8 +32,6 @@ public class RoutineExerciseServiceImpl implements RoutineExerciseService{
         catch(NullPointerException e){
             throw new ResourceNotFound("Could not create a routine exercise at this time");
         }
-
-        return routineExercise;
     }
 
     @Override

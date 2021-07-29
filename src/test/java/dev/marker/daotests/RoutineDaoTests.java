@@ -10,14 +10,15 @@ import dev.marker.utils.Setup;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.util.List;
+import java.util.Properties;
 
 public class RoutineDaoTests {
 
@@ -33,38 +34,48 @@ public class RoutineDaoTests {
 
     @BeforeClass
     void testInit(){
-        ConnectionUtil.setHostname("revaturedb.cw0dgbcoagdz.us-east-2.rds.amazonaws.com");
-        ConnectionUtil.setUsername("revature");
-        ConnectionUtil.setPassword("revature");
-        Setup.setupTables(userTableName, "test_exercises", routineTableName, "test_routine_exercises");
-        connection = ConnectionUtil.createConnection();
+        try {
+            Properties connectionProperties = new Properties();
+            connectionProperties.load(ExerciseDaoTests.class.getResourceAsStream("/database.properties"));
+            ConnectionUtil.setConnectionProperties(connectionProperties);
+            connection = ConnectionUtil.createConnection();
+            Setup.runSQLScript(ExerciseDaoTests.class.getResourceAsStream("/test_database_setup.sql"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         try{
-            String sql = String.format("DELETE FROM %s", userTableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            String sql = String.format("DELETE FROM %s", routineTableName);
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", userTableName);
+            ps = connection.prepareStatement(sql);
             ps.execute();
             userDao.createUser(user);
             userDao.createUser(extraUser);
         }
         catch(Exception e){
-
+            e.printStackTrace();
         }
     }
 
-    @BeforeMethod
+    @AfterMethod
     void emptyTables(){
         try{
             String sql = String.format("DELETE FROM %s", routineTableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.execute();
         }
         catch(Exception e){
-
+            e.printStackTrace();
         }
     }
 
     @AfterClass
     void closeConnection(){
         try{
+            String sql = String.format("DELETE FROM %s", userTableName);
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.execute();
             connection.close();
         }
         catch(Exception e){

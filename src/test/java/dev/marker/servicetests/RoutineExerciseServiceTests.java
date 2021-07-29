@@ -1,6 +1,7 @@
 package dev.marker.servicetests;
 
 import dev.marker.daos.*;
+import dev.marker.daotests.ExerciseDaoTests;
 import dev.marker.entities.Exercise;
 import dev.marker.entities.Routine;
 import dev.marker.entities.RoutineExercise;
@@ -18,10 +19,11 @@ import org.testng.annotations.BeforeClass;
 import dev.marker.services.RoutineExerciseService;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.util.List;
+import java.util.Properties;
 
 public class RoutineExerciseServiceTests {
     private static String routineTableName = "test_routines";
@@ -40,17 +42,33 @@ public class RoutineExerciseServiceTests {
 
     @BeforeClass
     void setup() {
-        ConnectionUtil.setHostname("revaturedb.cw0dgbcoagdz.us-east-2.rds.amazonaws.com");
-        ConnectionUtil.setUsername("revature");
-        ConnectionUtil.setPassword("revature");
-        Setup.setupTables(userTableName, "test_exercises", routineTableName, "test_routine_exercises");
-
-        connection = ConnectionUtil.createConnection();
         try {
-            String sql = String.format("DELETE FROM %s", userTableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            Properties connectionProperties = new Properties();
+            connectionProperties.load(ExerciseDaoTests.class.getResourceAsStream("/database.properties"));
+            ConnectionUtil.setConnectionProperties(connectionProperties);
+            connection = ConnectionUtil.createConnection();
+            Setup.runSQLScript(ExerciseDaoTests.class.getResourceAsStream("/test_database_setup.sql"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try{
+            String sql = String.format("DELETE FROM %s", routineExerciseTableName);
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", routineExerciseTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", routineTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", exerciseTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", userTableName);
+            ps = connection.prepareStatement(sql);
             ps.execute();
         } catch (Exception e) {
+            e.printStackTrace();
         }
         UserDao userDao = new UserDaoPostgres(userTableName);
         userDao.createUser(user);
@@ -58,20 +76,26 @@ public class RoutineExerciseServiceTests {
         routine = routineDao.createRoutine(routine);
         ExerciseDao exerciseDao = new ExerciseDaoPostgres(exerciseTableName);
         exerciseDao.createExercise(new Exercise("Jumping Jacks", "Jumping", "Cardio", "Youtube.com"));
-        try {
-            String sql = String.format("DELETE FROM %s", routineExerciseTableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.execute();
-        } catch (Exception e) {
-
-        }
-
-
     }
 
     @AfterClass
     void closeConnection() {
         try {
+            String sql = String.format("DELETE FROM %s", routineExerciseTableName);
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", routineExerciseTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", routineTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", exerciseTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", userTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
             connection.close();
         } catch (Exception e) {
             e.printStackTrace();

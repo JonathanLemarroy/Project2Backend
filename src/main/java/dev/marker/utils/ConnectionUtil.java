@@ -3,16 +3,18 @@ package dev.marker.utils;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 
 public class ConnectionUtil {
 
-    private static String hostName = "";
+    private static String host = "";
+    private static String protocol = "";
     private static String username = "";
     private static String password = "";
 
     public static Connection createConnection(){
         try {
-            Connection connection = DriverManager.getConnection(String.format("jdbc:postgresql://%s:5432/postgres?user=%s&password=%s", hostName, username, password));
+            Connection connection = DriverManager.getConnection(String.format("jdbc:%s://%s?user=%s&password=%s", protocol, host, username, password));
             return connection;
         } catch (SQLException sqlException) {
             sqlException.printStackTrace();
@@ -20,15 +22,10 @@ public class ConnectionUtil {
         }
     }
 
-    public static void setHostname(String hostname){
-        ConnectionUtil.hostName = hostname;
-    }
-
-    public static void setUsername(String username){
-        ConnectionUtil.username = username;
-    }
-
-    public static void setPassword(String password){
-        ConnectionUtil.password = password;
+    public static void setConnectionProperties(Properties properties){
+        ConnectionUtil.protocol = properties.getProperty("protocol");
+        ConnectionUtil.host = properties.getProperty("host");
+        ConnectionUtil.username = properties.getProperty("username");
+        ConnectionUtil.password = properties.getProperty("password");
     }
 }

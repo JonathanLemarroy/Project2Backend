@@ -1,8 +1,8 @@
 package dev.marker.daotests;
 
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import dev.marker.daos.UserDao;
@@ -11,9 +11,11 @@ import dev.marker.entities.User;
 import dev.marker.utils.ConnectionUtil;
 import dev.marker.utils.Setup;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
+import java.sql.SQLException;
+import java.util.Properties;
 
 import org.testng.Assert;
 
@@ -25,22 +27,28 @@ public class UserDaoTests {
 
     @BeforeClass
     void setupConnection(){
-        ConnectionUtil.setHostname("revaturedb.cw0dgbcoagdz.us-east-2.rds.amazonaws.com");
-        ConnectionUtil.setUsername("revature");
-        ConnectionUtil.setPassword("revature");
-        Setup.setupTables(tableName, "test_exercises", "test_routines", "test_routine_exercises");
-        connection = ConnectionUtil.createConnection();
+        try {
+            Properties connectionProperties = new Properties();
+            connectionProperties.load(ExerciseDaoTests.class.getResourceAsStream("/database.properties"));
+            ConnectionUtil.setConnectionProperties(connectionProperties);
+            Setup.runSQLScript(UserDaoTests.class.getResourceAsStream("/test_database_setup.sql"));
+            connection = ConnectionUtil.createConnection();
+            String sql = String.format("DELETE FROM %s", tableName);
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.execute();
+        } catch (IOException | SQLException e) {
+            e.printStackTrace();
+        }
     }
 
-    @BeforeMethod
-    void emptyTables(){
-        try{
+    @AfterMethod
+    void clearUsers(){
+        try {
             String sql = String.format("DELETE FROM %s", tableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.execute();
-        }
-        catch(Exception e){
-
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
@@ -100,7 +108,6 @@ public class UserDaoTests {
         User returnedUser = userDao.getUser(user.getUsername());
         Assert.assertNotNull(returnedUser);
         Assert.assertEquals(user.getUsername(), returnedUser.getUsername());
-//        Assert.assertEquals(user.getPassword(), returnedUser.getPassword());
         Assert.assertEquals(user.getFirstName(), returnedUser.getFirstName());
         Assert.assertEquals(user.getLastName(), returnedUser.getLastName());
         Assert.assertEquals(user.getGender(), returnedUser.getGender());

@@ -1,14 +1,16 @@
 package dev.marker.daotests;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Properties;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import dev.marker.daos.ExerciseDao;
@@ -44,41 +46,38 @@ public class RoutineExerciseDaoTests {
 
     @BeforeClass
     void testInit(){
-        ConnectionUtil.setHostname("revaturedb.cw0dgbcoagdz.us-east-2.rds.amazonaws.com");
-        ConnectionUtil.setUsername("revature");
-        ConnectionUtil.setPassword("revature");
-        Setup.setupTables(userTableName, exerciseTableName, routineTableName, routineExerciseTableName);
-        connection = ConnectionUtil.createConnection();
+        try {
+            Properties connectionProperties = new Properties();
+            connectionProperties.load(ExerciseDaoTests.class.getResourceAsStream("/database.properties"));
+            ConnectionUtil.setConnectionProperties(connectionProperties);
+            connection = ConnectionUtil.createConnection();
+            Setup.runSQLScript(ExerciseDaoTests.class.getResourceAsStream("/test_database_setup.sql"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         try{
-            String sql = String.format("DELETE FROM %s", userTableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            String sql = String.format("DELETE FROM %s", routineExerciseTableName);
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", routineTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", exerciseTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", userTableName);
+            ps = connection.prepareStatement(sql);
             ps.execute();
         }
         catch(Exception e){
-
-        }
-        try{
-            String sql = String.format("DELETE FROM %s", routineTableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.execute();
-        }
-        catch(Exception e){
-
-        }
-        try{
-            String sql = String.format("DELETE FROM %s", exerciseTableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.execute();
-        }
-        catch(Exception e){
-
+            e.printStackTrace();
         }
         userDao.createUser(user);
         routineDao.createRoutine(routine);
         exerciseDao.createExercise(ex);
     }
 
-    @BeforeMethod
+    @AfterMethod
     void emptyTables(){
         try{
             String sql = String.format("DELETE FROM %s", routineExerciseTableName);
@@ -86,13 +85,22 @@ public class RoutineExerciseDaoTests {
             ps.execute();
         }
         catch(Exception e){
-
+            e.printStackTrace();
         }
     }
 
     @AfterClass
     void closeConnection(){
         try{
+            String sql = String.format("DELETE FROM %s", routineTableName);
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", exerciseTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", userTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
             connection.close();
         }
         catch(Exception e){

@@ -12,10 +12,12 @@ import dev.marker.services.ExerciseServiceImpl;
 import dev.marker.utils.ConnectionUtil;
 import dev.marker.utils.Setup;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
+import java.sql.SQLException;
 import java.util.List;
+import java.util.Properties;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -33,23 +35,26 @@ public class ExerciseServiceTests {
 
     @BeforeClass
     void setup() {
-        ConnectionUtil.setHostname("revaturedb.cw0dgbcoagdz.us-east-2.rds.amazonaws.com");
-        ConnectionUtil.setUsername("revature");
-        ConnectionUtil.setPassword("revature");
-        Setup.setupTables("test_users", tableName, "test_routines", "test_routine_exercises");
-        connection = ConnectionUtil.createConnection();
         try {
+            Properties connectionProperties = new Properties();
+            connectionProperties.load(ExerciseServiceTests.class.getResourceAsStream("/database.properties"));
+            ConnectionUtil.setConnectionProperties(connectionProperties);
+            connection = ConnectionUtil.createConnection();
+            Setup.runSQLScript(ExerciseServiceTests.class.getResourceAsStream("/test_database_setup.sql"));
             String sql = String.format("DELETE FROM %s", tableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.execute();
-        } catch (Exception e) {
-
+        } catch (IOException | SQLException e) {
+            e.printStackTrace();
         }
     }
 
     @AfterClass
     void closeConnection() {
         try {
+            String sql = String.format("DELETE FROM %s", tableName);
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.execute();
             connection.close();
         } catch (Exception e) {
             e.printStackTrace();

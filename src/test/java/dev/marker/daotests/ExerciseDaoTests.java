@@ -1,14 +1,18 @@
 package dev.marker.daotests;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
+import java.sql.SQLException;
 import java.util.List;
+import java.util.Properties;
+
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
 import dev.marker.daos.ExerciseDao;
 import dev.marker.daos.ExerciseDaoPostgres;
 import dev.marker.entities.Exercise;
@@ -23,22 +27,29 @@ public class ExerciseDaoTests {
 
     @BeforeClass
     void setupConnection(){
-        ConnectionUtil.setHostname("revaturedb.cw0dgbcoagdz.us-east-2.rds.amazonaws.com");
-        ConnectionUtil.setUsername("revature");
-        ConnectionUtil.setPassword("revature");
-        Setup.setupTables("test_users", tableName, "test_routines", "test_routine_exercises");
-        connection = ConnectionUtil.createConnection();
+        try {
+            Properties connectionProperties = new Properties();
+            connectionProperties.load(ExerciseDaoTests.class.getResourceAsStream("/database.properties"));
+            ConnectionUtil.setConnectionProperties(connectionProperties);
+            connection = ConnectionUtil.createConnection();
+            Setup.runSQLScript(ExerciseDaoTests.class.getResourceAsStream("/test_database_setup.sql"));
+            String sql = String.format("DELETE FROM %s", tableName);
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.execute();
+        } catch (IOException | SQLException e) {
+            e.printStackTrace();
+        }
     }
 
-    @BeforeMethod
+    @AfterMethod
     void emptyTables(){
         try{
             String sql = String.format("DELETE FROM %s", tableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.execute();
         }
         catch(Exception e){
-
+            e.printStackTrace();
         }
     }
 

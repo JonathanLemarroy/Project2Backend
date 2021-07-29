@@ -8,25 +8,18 @@ public class UserDaoPostgres implements UserDao {
 
     private String tableName;
     public static final String salt = "bf";
-    public UserDaoPostgres(String tableName){
-        this.tableName = tableName;
-    }
 
-    public void setTable(String tableName) {
+    public UserDaoPostgres(String tableName) {
         this.tableName = tableName;
-    }
-
-    public String getTableName() {
-        return this.tableName;
     }
 
     @Override
     public User createUser(User user) {
-        String sql = String.format("INSERT INTO %s(username, password , first_name, last_name, gender, age, height, weight, admin) VALUES (?,crypt(?, gen_salt(?)),?,?,?,?,?,?,?)", this.tableName);
-
-        try(Connection connection = ConnectionUtil.createConnection();
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)){
-
+        String sql = String.format(
+                "INSERT INTO %s(username, password , first_name, last_name, gender, age, height, weight, admin) VALUES (?,crypt(?, gen_salt(?)),?,?,?,?,?,?,?)",
+                this.tableName);
+        try (Connection connection = ConnectionUtil.createConnection()) {
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, user.getUsername());
             ps.setString(2, user.getPassword());
             ps.setString(3, UserDaoPostgres.salt);
@@ -39,20 +32,17 @@ public class UserDaoPostgres implements UserDao {
             ps.setBoolean(10, user.isAdmin());
             ps.execute();
             return user;
-        }
-        catch(SQLException e){
+        } catch (SQLException e) {
             return null;
         }
     }
 
-
     @Override
     public User getUser(String username) {
         String sql = String.format("SELECT * FROM %s WHERE username = ?", this.tableName);
-        try(Connection connection = ConnectionUtil.createConnection();
-        PreparedStatement ps = connection.prepareStatement(sql)){
-
-            ps.setString(1,username);
+        try (Connection connection = ConnectionUtil.createConnection()) {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setString(1, username);
             User returnedUser = new User();
             ResultSet rs = ps.executeQuery();
             rs.next();
@@ -66,19 +56,18 @@ public class UserDaoPostgres implements UserDao {
             returnedUser.setAdmin(rs.getBoolean("admin"));
             rs.close();
             return returnedUser;
-        }
-        catch(SQLException e){
+        } catch (SQLException e) {
             return null;
         }
     }
 
-
     @Override
     public User updateUser(User user) {
-        String sql = String.format("UPDATE %s SET password=crypt(?, gen_salt(?)), first_name=?, last_name=?, gender=?, age=?, height=?, weight=?, admin=? WHERE username=?", this.tableName);
-        try(Connection connection = ConnectionUtil.createConnection();
-            PreparedStatement ps = connection.prepareStatement(sql)){
-
+        String sql = String.format(
+                "UPDATE %s SET password=crypt(?, gen_salt(?)), first_name=?, last_name=?, gender=?, age=?, height=?, weight=?, admin=? WHERE username=?",
+                this.tableName);
+        try (Connection connection = ConnectionUtil.createConnection()) {
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setString(1, user.getPassword());
             ps.setString(2, UserDaoPostgres.salt);
             ps.setString(3, user.getFirstName());
@@ -90,12 +79,11 @@ public class UserDaoPostgres implements UserDao {
             ps.setBoolean(9, user.isAdmin());
             ps.setString(10, user.getUsername());
             int rtnCount = ps.executeUpdate();
-            if(rtnCount == 0)
+            if (rtnCount == 0)
                 return null;
             else
                 return user;
-        }
-        catch(SQLException e) {
+        } catch (SQLException e) {
             return null;
         }
     }
@@ -103,17 +91,15 @@ public class UserDaoPostgres implements UserDao {
     @Override
     public String deleteUser(String username) {
         String sql = String.format("DELETE FROM %s WHERE username = ?", this.tableName);
-        try(Connection connection = ConnectionUtil.createConnection();
-            PreparedStatement ps = connection.prepareStatement(sql)){
-
+        try (Connection connection = ConnectionUtil.createConnection()) {
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setString(1, username);
             int rowsChanged = ps.executeUpdate();
-            if(rowsChanged == 0)
+            if (rowsChanged == 0)
                 return null;
             else
                 return username;
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             return null;
         }
     }

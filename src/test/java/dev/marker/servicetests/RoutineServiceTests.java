@@ -18,16 +18,18 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.util.List;
+import java.util.Properties;
 
 public class RoutineServiceTests {
 
     private static String routineTableName = "test_routines";
     private static String userTableName = "test_users";
     private static Connection connection;
+    private static UserDao userDao = new UserDaoPostgres(userTableName);
     private static RoutineService routineService = new RoutineServiceImpl(new RoutineDaoPostgres(routineTableName));
     private static User user = new User("RServiceUser", "password", "Test", "User", "Male", 20, 70, 150, false);
     private static User userFail = new User("RServiceUserFail", "password", "Test", "User", "Male", 20, 70, 150, false);
@@ -35,32 +37,39 @@ public class RoutineServiceTests {
 
     @BeforeClass
     void setup() {
-        ConnectionUtil.setHostname("revaturedb.cw0dgbcoagdz.us-east-2.rds.amazonaws.com");
-        ConnectionUtil.setUsername("revature");
-        ConnectionUtil.setPassword("revature");
-        Setup.setupTables(userTableName, "test_exercises", routineTableName, "test_routine_exercises");
-        connection = ConnectionUtil.createConnection();
         try {
-            String sql = String.format("DELETE FROM %s", userTableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.execute();
-        } catch (Exception e) {
+            Properties connectionProperties = new Properties();
+            connectionProperties.load(RoutineServiceTests.class.getResourceAsStream("/database.properties"));
+            ConnectionUtil.setConnectionProperties(connectionProperties);
+            connection = ConnectionUtil.createConnection();
+            Setup.runSQLScript(RoutineServiceTests.class.getResourceAsStream("/test_database_setup.sql"));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        UserDao userDao = new UserDaoPostgres(userTableName);
-        userDao.createUser(user);
-        userDao.createUser(userFail);
-        try {
+        try{
             String sql = String.format("DELETE FROM %s", routineTableName);
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.execute();
-        } catch (Exception e) {
-
+            sql = String.format("DELETE FROM %s", userTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
+            userDao.createUser(user);
+            userDao.createUser(userFail);
+        }
+        catch(Exception e){
+            e.printStackTrace();
         }
     }
 
     @AfterClass
     void closeConnection() {
         try {
+            String sql = String.format("DELETE FROM %s", routineTableName);
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.execute();
+            sql = String.format("DELETE FROM %s", userTableName);
+            ps = connection.prepareStatement(sql);
+            ps.execute();
             connection.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -74,7 +83,7 @@ public class RoutineServiceTests {
             Assert.assertNotEquals(routine.getRoutineId(), 0);
             Assert.assertEquals(routine.getRoutineName(), "Arms Day");
         } catch (IncorrectArguments e) {
-
+            e.printStackTrace();
         }
     }
 
